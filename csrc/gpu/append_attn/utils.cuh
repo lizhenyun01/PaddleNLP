@@ -443,3 +443,17 @@ inline HOSTDEVICE T roundWithTiesToEven(T x) {
           ? xLower
           : xUpper);
 }
+
+inline uint32_t get_max_partition_size(int bsz) {
+    static const char* max_partition_size_env = std::getenv("FLAGS_cascade_attention_max_partition_size");
+    static const uint32_t max_partition_size =
+            max_partition_size_env == nullptr ? 0 : std::stoul(std::string(max_partition_size_env));
+    return (max_partition_size != 0 ? max_partition_size : (bsz == 1 ? 128 : 512));
+}
+
+inline bool get_mla_use_tensorcore() {
+    static const char* mla_use_tensorcore_env = std::getenv("FLAGS_mla_use_tensorcore");
+    static const uint32_t mla_use_tensorcore =
+            mla_use_tensorcore_env == nullptr ? 1 : std::stoul(std::string(mla_use_tensorcore_env));
+    return mla_use_tensorcore != 0 ? true : false;
+}

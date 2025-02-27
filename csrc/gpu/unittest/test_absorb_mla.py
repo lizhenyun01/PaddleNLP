@@ -18,6 +18,8 @@ import numpy as np
 import paddle
 import paddlenlp_ops
 
+# from paddle import profiler as profiler
+
 np.random.seed(2024)
 paddle.seed(2024)
 
@@ -220,6 +222,8 @@ def test_append_c16_attention(cache_length, bsz):
         block_size,
         1,
     )
+
+    paddle.device.synchronize()
     softmax_scale = head_dim_qk ** (-0.5)
     print("softmax_scale: ", softmax_scale)
 
@@ -238,7 +242,7 @@ def test_append_c16_attention(cache_length, bsz):
     compressed_kv = paddle.rand(shape=compressed_kv_shape).astype(dtype)
     key_pe = paddle.rand(shape=key_pe_shape).astype(dtype)
     # print("compressed_kv: ", compressed_kv)
-    print("key_pe: ", key_pe)
+    # print("key_pe: ", key_pe)
     paddlenlp_ops.decode_mla_write_cache(
         compressed_kv,
         key_pe,
@@ -251,7 +255,7 @@ def test_append_c16_attention(cache_length, bsz):
         "none",
         max_length,
     )
-    print("latent_cache0: ", latent_cache.shape)
+    # print("latent_cache0: ", latent_cache.shape)
     # print("latent_cache_v0: ", latent_cache[132][:, :, :512])
     # print("latent_cache1: ", latent_cache[1])
     # seq_lens_decoder += 1
@@ -294,7 +298,7 @@ def test_append_c16_attention(cache_length, bsz):
         "kv_tile_ids_per_batch",
         "kv_num_blocks",
         "decoder_batch_ids",
-        "decoder_tile_idss_per_batch",
+        "decoder_tile_ids_per_batch",
         "decoder_num_blocks_device",
         "decoder_num_blocks",
         "max_enc_len_this_time",
@@ -306,11 +310,29 @@ def test_append_c16_attention(cache_length, bsz):
             print(f"{inputs_name[i]}: {inputs[i].reshape([-1, num_q_head, head_dim_qk])}")
         else:
             print(f"{inputs_name[i]}: {inputs[i]}")
+
+    # def my_on_trace_ready(prof):  # 定义回调函数，性能分析器结束采集数据时会被调用
+    #     """
+    #     当性能分析器完成数据采集后被调用的回调函数
+
+    #     Args:
+    #         prof: 分析器对象，用于获取性能数据
+
+    #     Returns:
+    #         None
+    #     """
+    #     callback = profiler.export_chrome_tracing("./profiler_demo")  # 创建导出性能数据到profiler_demo文件夹的回调函数
+    #     callback(prof)  # 执行该导出函数
+    #     prof.summary(sorted_by=profiler.SortedKeys.GPUTotal)  # 打印表单，按GPUTotal排序表单项
+
+    # p = profiler.Profiler(on_trace_ready=my_on_trace_ready, timer_only=False)
+
     paddle.device.synchronize()
     s_time = 0
     for i in range(run_time + warm_up):
         if i == warm_up:
             s_time = time.time()
+            # p.start()
         out = paddlenlp_ops.multi_head_latent_attention(
             query,
             latent_cache,
@@ -359,7 +381,8 @@ def test_append_c16_attention(cache_length, bsz):
             False,  # speculate_decoder
         )
         paddle.device.synchronize()
-
+    #     p.step()
+    # p.stop()
     e_time = time.time()
     base_out = mqa_attention(query, p_compressed_kv, compressed_kv, p_key_pe, key_pe, token_num, softmax_scale)
     base_out = base_out.reshape([-1, num_q_head, head_dim_v])
@@ -379,6 +402,6 @@ def test_append_c16_attention(cache_length, bsz):
 if __name__ == "__main__":
     # for cache_length in [1024, 2048]:
     #   for bsz in [1, 8, 32, 96, 128, 256]:
-    for cache_length in [1984]:
+    for cache_length in [5244]:
         for bsz in [1]:
             test_append_c16_attention(cache_length, bsz)
