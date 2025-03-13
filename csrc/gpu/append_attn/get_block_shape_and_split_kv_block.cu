@@ -296,6 +296,8 @@ std::vector<paddle::Tensor> GetBlockShapeAndSplitKVBlock(
                                           group_size);
       decoder_num_blocks_x_cpu =
         decoder_num_blocks_x.copy_to(paddle::CPUPlace(), false);
+      decoder_chunk_size_cpu =
+        paddle::full({64}, -1, paddle::DataType::INT32, paddle::CPUPlace());
     }
   } else {
     decoder_batch_ids =
