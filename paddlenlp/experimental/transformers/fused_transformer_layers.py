@@ -5227,7 +5227,6 @@ class FusedBlockMultiTransformerFP8DynamicQuant(FusedBlockMultiTransformer):
                 kwargs.get("kv_batch_ids", None),
                 kwargs.get("kv_tile_ids_per_batch", None),
                 kwargs.get("kv_num_blocks", None),
-                kwargs.get("decoder_chunk_size", None),
                 kwargs.get("decoder_batch_ids", None),
                 kwargs.get("decoder_tile_ids_per_batch", None),
                 kwargs.get("decoder_num_blocks", None),
